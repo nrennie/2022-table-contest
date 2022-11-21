@@ -1,2 +1,3 @@
-# rstudio-table-competition-2022
-Repository containing code for the RStudio Table Competition 2022
+# 2022 Table Contest
+
+Repository containing code for the 2022 Table Contest hosted by Posit (formerly RStudio).
