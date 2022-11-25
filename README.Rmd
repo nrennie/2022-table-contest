@@ -1,0 +1,21 @@
+---
+title: "2022 Table Contest"
+output: md_document
+---
+
+## 2022 Table Contest
+
+This repository contains code for the 2022 Table Contest hosted by Posit (formerly RStudio).
+
+### Data
+
+The data used in this table comes from a #TidyTuesday data set which can be found on [GitHub](https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-08-24/readme.md). The text information found in the species description comes from the Duke Lemur Center [website](https://lemur.duke.edu/discover/meet-the-lemurs/aye-aye/).
+
+### Images
+
+The images used in this are shared under various Creative Commons licenses. See the table below for more information.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+imgs <- readr::read_csv('data/image_credits.csv')
+knitr::kable(imgs)
+```
