@@ -17,5 +17,5 @@ The images used in this are shared under various Creative Commons licenses. See 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 imgs <- readr::read_csv('data/image_credits.csv')
-knitr::kable(imgs)
+knitr::kable(imgs, "html", escape = FALSE)
 ```
