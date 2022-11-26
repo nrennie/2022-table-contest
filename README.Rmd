@@ -7,6 +7,11 @@ output: md_document
 
 This repository contains code for the 2022 Table Contest hosted by Posit (formerly RStudio).
 
+* GitHub: [github.com/nrennie/2022-table-contest](https://github.com/nrennie/2022-table-contest)
+* Posit.cloud project: [posit.cloud/content/5036002](https://posit.cloud/content/5036002)
+* Quarto Pub: [nrennie.quarto.pub/lemurs-at-duke-lemur-center](https://nrennie.quarto.pub/lemurs-at-duke-lemur-center/)
+* RStudio community: [community.rstudio.com/t/lemurs-at-duke-lemur-center-table-contest/153662](https://community.rstudio.com/t/lemurs-at-duke-lemur-center-table-contest/153662)
+
 ### Data
 
 The data used in this table comes from a #TidyTuesday data set which can be found on [GitHub](https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-08-24/readme.md). The text information found in the species description comes from the Duke Lemur Center [website](https://lemur.duke.edu/discover/meet-the-lemurs/aye-aye/).
@@ -17,5 +22,5 @@ The images used in this are shared under various Creative Commons licenses. See 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 imgs <- readr::read_csv('data/image_credits.csv')
-knitr::kable(imgs, "html", escape = FALSE)
+knitr::kable(imgs, escape = FALSE)
 ```
