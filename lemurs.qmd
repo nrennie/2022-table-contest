@@ -1,0 +1,345 @@
+---
+format:
+  html:
+    embed-resources: true
+    page-layout: full
+execute: 
+  echo: false
+  eval: true
+---
+
+```{r}
+#| label: load-pacakages
+#| warning: false
+#| message: false
+library(tidyverse)
+library(gt)
+```
+
+```{r}
+#| label: read-data
+#| warning: false
+#| message: false
+lemurs <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-24/lemur_data.csv')
+taxons <- readr::read_csv('data/taxon.csv')
+```
+
+```{r}
+#| label: count-species
+# create description column of table
+lemur_nums <- lemurs %>% 
+  # join taxonomy description data to lemur data
+  left_join(taxons, by = "taxon") %>% 
+  select(taxon, name, common, latin, description) %>% 
+  distinct() %>% 
+  # count number of each species and sort taxonomy as a factor
+  group_by(taxon) %>% 
+  mutate(n = n()) %>% 
+  ungroup() %>% 
+  select(taxon, common, latin, n, description) %>% 
+  distinct() %>% 
+  arrange(desc(n)) %>% 
+  mutate(taxon = factor(taxon, levels = taxon)) %>% 
+  # join species name, latin name, and description together with HTML formatting
+  mutate(species = glue::glue("<p align='left'><b>{common}</b><br><i>{latin}</i><br><small>{description}</small><p>")) %>% 
+  select(taxon, n, species)
+```
+
+```{r}
+#| label: count-lemurs
+# count number of male and female lemurs for each species, and whether they are still living or not
+lemur_count <- lemurs %>% 
+  mutate(current = if_else(is.na(dod), "CURRENT", "DEAD"),
+         current = factor(current, levels = c("CURRENT", "DEAD"))) %>% 
+  select(c(current, taxon, sex, name)) %>% 
+  distinct() %>% 
+  group_by(taxon, sex) %>% 
+  # include total number of male and female lemurs
+  mutate(n_tot = n()) %>% 
+  ungroup() %>% 
+  group_by(current, taxon, sex) %>% 
+  mutate(n = n()) %>% 
+  filter(sex %in% c("F", "M")) %>% 
+  select(-name) %>% 
+  distinct()
+```
+
+```{r}
+#| label: barchart-function
+# create a function that produces a bar chart of number of male and
+# female lemurs for a given taxonomy code
+taxon_bar <- function(select_taxon, df){
+  # filter to only include selected species
+  plot_data <- df %>%
+    filter(taxon == select_taxon)
+  ggplot() +
+    # bar chart coloured by sex and whether lemurs are currently at DLC
+    geom_col(data = plot_data,
+             mapping = aes(x = sex,
+                           y = n,
+                           fill = sex,
+                           alpha = current),
+             width = 1) +
+    # add label with total number of males and females
+    geom_text(data = plot_data,
+              mapping = aes(x = sex,
+                            y = n_tot,
+                            label = n_tot),
+              hjust = -1,
+              colour = "black",
+              size = 20,
+              fontface = "bold") +
+    # remove labels and set colour choices
+    labs(x = "", y = "") +
+    scale_fill_manual(values = c("#a1b70d", "#8a8d8f")) +
+    scale_alpha_manual(values=c(0.5, 1)) +
+    # fix limits to be the same for all plots (across all species)
+    scale_y_continuous(limits = c(0, plyr::round_any(max(df$n_tot), 50, ceiling))) +
+    coord_flip() +
+    theme_minimal() +
+    theme(legend.position = "none",
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.text = element_blank())
+}
+```
+
+```{r}
+#| label: make-barcharts
+# call the barchart function on all taxonomy codes
+barcharts <- purrr::map(.x = lemur_nums$taxon, .f = ~taxon_bar(.x, df = lemur_count))
+```
+
+```{r}
+#| label: lemur-weights
+# create a table of the average lemur weights with age for each species
+lemur_weights <- lemurs %>% 
+  select(c(taxon, sex, age_at_wt_mo, weight_g)) %>% 
+  filter(sex %in% c("F", "M")) %>% 
+  drop_na() %>% 
+  # break down into 2 year age groups and calculate avg weight
+  mutate(age_group = cut(age_at_wt_mo,
+                         breaks = seq(0, 500, 24))) %>% 
+  group_by(taxon, sex, age_group) %>% 
+  mutate(avg_wt = mean(age_at_wt_mo)) %>% 
+  select(-c(age_at_wt_mo, weight_g)) %>% 
+  distinct() %>% 
+  # remove zero weights as these seem to be incorrect values
+  filter(avg_wt != 0)
+```
+
+```{r}
+#| label: linechart-function
+# create a function that produces a line chart of weight of male and
+# female lemurs for a given taxonomy code as they age
+taxon_line <- function(select_taxon, df){
+  # filter to only chosen taxonomy code
+  plot_data <- df %>%
+    filter(taxon == select_taxon) 
+  ggplot(data = plot_data,
+         mapping = aes(x = age_group,
+                       y = avg_wt,
+                       colour = sex,
+                       group = sex)) +
+    # draw semi-transparent line with points on top
+    geom_line(linewidth = 4, alpha = 0.5) +
+    geom_point(size = 8) +
+    labs(x = "", y = "Weight (g)") +
+    # set colours and axis break points
+    scale_colour_manual(values = c("#a1b70d", "#8a8d8f")) +
+    scale_x_discrete(breaks = c("(96,120]", "(216,240]", "(336,360]"),
+                     labels = c("10 years", "20 years", "30 years"),
+                     drop = FALSE) +
+    scale_y_continuous(limits = c(0, plyr::round_any(max(df$avg_wt), 50, ceiling)),
+                       breaks = c(0, 250, 500)) +
+    coord_cartesian(expand = FALSE) +
+    theme_minimal() +
+    theme(legend.position = "none",
+          panel.grid.minor = element_blank(),
+          axis.title.y = element_text(margin = margin(r = 30), size = 60),
+          axis.text = element_text(size = 50),
+          panel.grid.major.x = element_blank(),
+          panel.grid.major.y = element_line(colour = "#8a8d8f"),
+          plot.margin = margin(40, 40, 5, 5))
+}
+```
+
+```{r}
+#| label: make-linecharts
+# call function to make linechart for each species
+linecharts <- purrr::map(.x = lemur_nums$taxon, .f = ~taxon_line(.x, df = lemur_weights))
+```
+
+
+```{r}
+#| label: table-text
+# write subtitle and caption for table
+st1 <- "Lemurs are a unique group of primates native to Madagascar, an island off the coast of east Africa. Although they are related to monkeys and apes, lemurs make up a separate branch of the primate family tree and are classified as a superfamily, made up of five individual lemur families and more than 100 different species. Founded in 1966 on the campus of Duke University in Durham, NC, the Duke Lemur Center is a world leader in the study, care, and protection of lemurs—Earth’s most threatened group of mammals. The Duke Lemur Center houses the world’s largest and most diverse population of lemurs outside their native Madagascar."
+
+# add html styling to the links to set colours to match plots
+cap1 <- "* Table created by N. Rennie for the 2022 Posit Table Contest in November 2022."
+cap2 <- '** Images used are licensed under Creative Commons licences. See <a style="color:#a1b70d" href="https://github.com/nrennie/2022-table-contest">github.com/nrennie/2022-table-contest</a> for details.'
+cap3 <- '*** Data originally from <a style="color:#a1b70d" href="https://lemur.duke.edu/">lemur.duke.edu</a> and can be accessed on GitHub at <a style="color:#a1b70d" href="https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-08-24">github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-08-24</a>.'
+```
+
+```{r}
+#| label: get-images
+# read in images from GitHub repo and set height
+all_images <- list.files("images/") %>% 
+  tibble(img = .) %>% 
+  mutate(taxon = str_extract(img, pattern = "[^.]+")) %>% 
+  mutate(img_html = glue::glue("<img src='https://raw.githubusercontent.com/nrennie/2022-table-contest/main/images/{img}' style='height:100px;'>"))
+```
+
+```{r}
+#| label: table-setup
+# select columns to go into final table
+lemur_table <- lemur_nums %>% 
+  left_join(all_images, by = "taxon") %>% 
+  mutate(bars = NA,
+         lines = NA) %>% 
+  select(c(img_html, species, bars, lines)) 
+```
+
+```{r}
+#| label: make-table
+# create table using gt
+lemur_table %>% 
+  gt() %>%
+  # images
+  text_transform(
+    locations = cells_body(columns = img_html),
+    fn = function(x){
+      purrr::map(
+        lemur_table$img_html, gt::html
+      )
+    }
+  ) %>% 
+  # names
+  text_transform(
+    locations = cells_body(columns = species),
+    fn = function(x){
+      purrr::map(
+        lemur_table$species, gt::html
+      )
+    }
+  ) %>% 
+  # barcharts
+  text_transform(
+    locations = cells_body(columns = bars),
+    fn = function(x){
+      purrr::map(
+        barcharts, ggplot_image, height = px(80), aspect_ratio = 4
+      )
+    }
+  ) %>%
+  # linecharts
+  text_transform(
+    locations = cells_body(columns = lines),
+    fn = function(x){
+      purrr::map(
+        linecharts, ggplot_image, height = px(80), aspect_ratio = 3
+      )
+    }
+  ) %>%
+  # change column labels
+  cols_label(
+    img_html = "",
+    species = "",
+    # add html code to change text colour inside column label
+    bars = gt::html(
+      "How many <span style='color:#8a8d8f'>male</span> and <span style='color:#a1b70d'>female</span> lemurs are housed at Duke Lemur Center?<br><small><i>NB: Darker shade indicates number of current residents.</i></small>"
+    ),
+    lines = gt::html(
+      "How do <span style='color:#8a8d8f'>male</span> and <span style='color:#a1b70d'>female</span> lemurs grow as they age?<br><small><i>NB: Average across all male and female lemurs recorded.</i></small>"
+    )
+  ) %>% 
+  # column width
+  cols_width(
+    img_html ~ px(125),
+    species ~ px(400),
+    bars ~ px(300),
+    lines ~ px(350)
+  ) %>% 
+  # table width and header padding
+  tab_options(table.width = 1175,
+              container.width = 1175,
+              heading.padding = 20
+              ) %>% 
+  # header
+  tab_header(
+    title = "LEMURS AT DUKE LEMUR CENTER",
+    subtitle = gt::html(
+      glue::glue("{st1}")
+    )
+  ) %>%
+  # title styling
+  tab_style(
+    locations = cells_title(groups = "title"),
+    style = list(
+      cell_text(font = google_font(
+        name = "Bangers"
+      ),
+      size = "xx-large",
+      align = "left"))
+  ) %>% 
+  # subtitle styling
+  tab_style(
+    locations = cells_title(groups = "subtitle"),
+    style = list(
+      cell_text(font = google_font(
+        name = "Oswald"
+      ),
+      size = "medium", 
+      color = "#8a8d8f",
+      align = "left"))
+  ) %>% 
+  # column header styling
+  tab_style(
+    style = list(
+      cell_text(
+        font = google_font(name = "Oswald"), 
+        v_align = "middle")
+      ),
+    locations = cells_column_labels(c(bars, lines))
+  ) %>% 
+  # Column styling
+  tab_style(
+    style = list(
+      cell_text(font = google_font(name = "Oswald"),
+      )),
+    locations = cells_body(columns = c(species))
+  ) %>%
+  # source note uing captions written previously
+  tab_source_note(
+    source_note = gt::html(
+      glue::glue("{cap1}<br>{cap2}<br>{cap3}")
+    )
+  ) %>% 
+  # source note styling
+  tab_style(
+    style = list(
+      cell_text(font = google_font(
+        name = "Oswald"
+      ),
+      size = "small")),
+    locations = cells_source_notes()
+  ) %>% 
+  # colour alternating rows
+  tab_style(
+    style = list(cell_fill(color = "#d8dde0")),
+    locations = cells_body(rows = seq(1,27,2))
+  )
+```
+
+
+
+
+
+
+
+
+
+
+
+
