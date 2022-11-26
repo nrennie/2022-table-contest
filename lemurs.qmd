@@ -185,10 +185,8 @@ cap3 <- '*** Data originally from <a style="color:#a1b70d" href="https://lemur.d
 ```{r}
 #| label: get-images
 # read in images from GitHub repo and set height
-all_images <- list.files("images/") %>% 
-  tibble(img = .) %>% 
-  mutate(taxon = str_extract(img, pattern = "[^.]+")) %>% 
-  mutate(img_html = glue::glue("<img src='https://raw.githubusercontent.com/nrennie/2022-table-contest/main/images/{img}' style='height:100px;'>"))
+all_images <- tibble::tibble(taxon = lemur_nums$taxon) %>% 
+  mutate(img_html = glue::glue("<img src='https://raw.githubusercontent.com/nrennie/2022-table-contest/main/images/{taxon}.png' style='height:100px;'>"))
 ```
 
 ```{r}
