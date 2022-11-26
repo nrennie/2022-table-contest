@@ -201,6 +201,7 @@ lemur_table <- lemur_nums %>%
 
 ```{r}
 #| label: make-table
+#| panel: fill
 # create table using gt
 lemur_table %>% 
   gt() %>%
@@ -256,12 +257,12 @@ lemur_table %>%
   cols_width(
     img_html ~ px(125),
     species ~ px(400),
-    bars ~ px(300),
-    lines ~ px(350)
+    bars ~ px(275),
+    lines ~ px(325)
   ) %>% 
   # table width and header padding
-  tab_options(table.width = 1175,
-              container.width = 1175,
+  tab_options(table.width = 1125,
+              container.width = 1125,
               heading.padding = 20
               ) %>% 
   # header
