@@ -1,0 +1,4 @@
+- source: lemurs.qmd
+  quarto-pub:
+    - id: 70a43b08-83bb-4e16-b97c-f64c8236336e
+      url: 'https://quartopub.com/sites/nrennie/lemurs-at-duke-lemur-center'

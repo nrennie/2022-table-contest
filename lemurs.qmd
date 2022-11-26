@@ -85,7 +85,7 @@ taxon_bar <- function(select_taxon, df){
               mapping = aes(x = sex,
                             y = n_tot,
                             label = n_tot),
-              hjust = -1,
+              hjust = -0.3,
               colour = "black",
               size = 20,
               fontface = "bold") +
@@ -100,7 +100,8 @@ taxon_bar <- function(select_taxon, df){
     theme(legend.position = "none",
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          axis.text = element_blank())
+          axis.text = element_blank(),
+          plot.margin = margin(5.5, 15, 5.5, 5.5))
 }
 ```
 
