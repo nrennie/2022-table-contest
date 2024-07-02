@@ -1,2 +1,5 @@
 *.html linguist-detectable=false
 *.js linguist-detectable=false
+*.rmd linguist-detectable
+*.Rmd linguist-detectable
+*.qmd linguist-detectable
